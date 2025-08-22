@@ -1,0 +1,1 @@
+# AI image analysis module for safety equipment detection

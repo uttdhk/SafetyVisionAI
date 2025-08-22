@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="jumbotron bg-gradient-primary text-white text-center py-5 mb-5 rounded">
+    <div class="container">
+        <h1 class="display-4 mb-4">
+            <i class="fas fa-shield-alt me-3"></i>
+            SafetyVision AI
+        </h1>
+        <p class="lead mb-4">
+            CCTV 영상에서 탱크로리 차량 작업자의 안전장비 착용 여부를 AI로 자동 분석합니다
+        </p>
+        <a href="{{ url_for('upload_file') }}" class="btn btn-light btn-lg">
+            <i class="fas fa-play me-2"></i>
+            분석 시작하기
+        </a>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row mb-5">
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-video fa-3x text-primary"></i>
+                </div>
+                <h5 class="card-title">CCTV 영상 분석</h5>
+                <p class="card-text">
+                    업로드된 CCTV 영상에서 자동으로 프레임을 추출하고 
+                    일정 간격으로 안전상태를 분석합니다.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-hard-hat fa-3x text-success"></i>
+                </div>
+                <h5 class="card-title">안전장비 검출</h5>
+                <p class="card-text">
+                    AI 모델을 사용하여 안전모, 안전벨트, 안전조끼 등의 
+                    착용 여부를 정확하게 검출합니다.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-chart-line fa-3x text-info"></i>
+                </div>
+                <h5 class="card-title">분석 보고서</h5>
+                <p class="card-text">
+                    검출 결과를 바탕으로 시각적 대시보드와 
+                    상세한 PDF 보고서를 자동으로 생성합니다.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detection Types Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">검출 가능한 안전장비</h2>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="d-flex align-items-center p-3 border rounded">
+            <div class="me-3">
+                <i class="fas fa-hard-hat fa-2x text-warning"></i>
+            </div>
+            <div>
+                <h6 class="mb-1">안전모</h6>
+                <small class="text-muted">작업자의 안전모 착용 여부 확인</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="d-flex align-items-center p-3 border rounded">
+            <div class="me-3">
+                <i class="fas fa-user-shield fa-2x text-success"></i>
+            </div>
+            <div>
+                <h6 class="mb-1">안전조끼</h6>
+                <small class="text-muted">시인성 향상을 위한 안전조끼 착용 확인</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="d-flex align-items-center p-3 border rounded">
+            <div class="me-3">
+                <i class="fas fa-user-tag fa-2x text-danger"></i>
+            </div>
+            <div>
+                <h6 class="mb-1">안전벨트</h6>
+                <small class="text-muted">탱크로리 운전 시 안전벨트 착용 확인</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Usage Steps -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">사용 방법</h2>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="text-center">
+            <div class="step-number mb-3">1</div>
+            <h5>파일 업로드</h5>
+            <p class="text-muted">
+                CCTV 영상 파일 또는 이미지를 업로드합니다
+            </p>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="text-center">
+            <div class="step-number mb-3">2</div>
+            <h5>AI 분석</h5>
+            <p class="text-muted">
+                AI 모델이 안전장비 착용 여부를 자동 분석합니다
+            </p>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="text-center">
+            <div class="step-number mb-3">3</div>
+            <h5>결과 확인</h5>
+            <p class="text-muted">
+                대시보드에서 분석 결과를 실시간으로 확인합니다
+            </p>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="text-center">
+            <div class="step-number mb-3">4</div>
+            <h5>보고서 다운로드</h5>
+            <p class="text-muted">
+                PDF 보고서와 분석 자료를 다운로드합니다
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Call to Action -->
+<div class="text-center py-5 bg-light rounded">
+    <h3 class="mb-3">안전한 작업환경을 위한 첫 걸음</h3>
+    <p class="lead mb-4">
+        지금 바로 CCTV 영상을 업로드하고 안전상태를 분석해보세요
+    </p>
+    <a href="{{ url_for('upload_file') }}" class="btn btn-primary btn-lg">
+        <i class="fas fa-upload me-2"></i>
+        파일 업로드하기
+    </a>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.feature-icon {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.step-number {
+    width: 60px;
+    height: 60px;
+    background: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0 auto;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease-in-out;
+}
+</style>
+{% endblock %}

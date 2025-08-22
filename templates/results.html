@@ -1,0 +1,517 @@
+{% extends "base.html" %}
+
+{% block title %}분석 결과 - SafetyVision AI{% endblock %}
+
+{% block extra_css %}
+<style>
+.results-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px 0;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 4px solid;
+    margin-bottom: 20px;
+}
+
+.metric-card.safe { border-left-color: #28a745; }
+.metric-card.warning { border-left-color: #ffc107; }
+.metric-card.danger { border-left-color: #dc3545; }
+.metric-card.info { border-left-color: #17a2b8; }
+
+.safety-score {
+    font-size: 3rem;
+    font-weight: bold;
+    text-align: center;
+}
+
+.safety-score.high { color: #28a745; }
+.safety-score.medium { color: #ffc107; }
+.safety-score.low { color: #dc3545; }
+
+.detection-item {
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+}
+
+.risk-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.risk-safe { background-color: #28a745; }
+.risk-low { background-color: #ffc107; }
+.risk-medium { background-color: #fd7e14; }
+.risk-high { background-color: #dc3545; }
+
+.image-thumbnail {
+    width: 100px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.download-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 25px;
+    margin-top: 30px;
+}
+
+.loading-spinner {
+    display: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="loadingSpinner" class="loading-spinner text-center">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">로딩 중...</span>
+    </div>
+    <p class="mt-2">분석 결과를 불러오는 중...</p>
+</div>
+
+<div id="resultsContent" style="display: none;">
+    <!-- Results Header -->
+    <div class="results-header text-center">
+        <div class="container">
+            <h2><i class="fas fa-chart-line me-2"></i>안전 분석 결과</h2>
+            <p class="lead mb-0">파일: <span id="originalFilename"></span></p>
+            <small>분석 완료: <span id="completedAt"></span></small>
+        </div>
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="metric-card safe">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-0">전체 안전도</h6>
+                        <div class="safety-score" id="safetyScore">--</div>
+                    </div>
+                    <div class="text-success">
+                        <i class="fas fa-shield-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="metric-card info">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-0">분석 이미지 수</h6>
+                        <h3 class="mb-0" id="totalImages">--</h3>
+                    </div>
+                    <div class="text-info">
+                        <i class="fas fa-images fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="metric-card safe">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-0">안전한 프레임</h6>
+                        <h3 class="mb-0 text-success" id="safeImages">--</h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="metric-card danger">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-0">위험 요소 발견</h6>
+                        <h3 class="mb-0 text-danger" id="riskImages">--</h3>
+                    </div>
+                    <div class="text-danger">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analysis -->
+    <div class="row">
+        <!-- Analysis Details -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>상세 분석 결과</h5>
+                </div>
+                <div class="card-body">
+                    <div id="detailsContainer">
+                        <!-- 동적으로 생성될 분석 결과 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Violations Summary -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>위반 사항 요약</h5>
+                </div>
+                <div class="card-body">
+                    <div id="violationsContainer">
+                        <!-- 동적으로 생성될 위반 사항 -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recommendations -->
+            <div class="card shadow-sm mt-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>안전 권고사항</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recommendationsContainer">
+                        <!-- 동적으로 생성될 권고사항 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Section -->
+    <div class="download-section">
+        <div class="row">
+            <div class="col-md-12">
+                <h4 class="mb-4"><i class="fas fa-download me-2"></i>분석 결과 다운로드</h4>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                        <h6>PDF 보고서</h6>
+                        <p class="text-muted small">상세한 분석 결과 보고서</p>
+                        <button class="btn btn-danger" onclick="downloadReport()">
+                            <i class="fas fa-download me-1"></i>다운로드
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-bar fa-3x text-primary mb-3"></i>
+                        <h6>분석 대시보드</h6>
+                        <p class="text-muted small">시각화된 분석 결과</p>
+                        <button class="btn btn-primary" onclick="downloadDashboard()">
+                            <i class="fas fa-download me-1"></i>다운로드
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-images fa-3x text-success mb-3"></i>
+                        <h6>이미지 갤러리</h6>
+                        <p class="text-muted small">주석이 추가된 이미지들</p>
+                        <button class="btn btn-success" onclick="viewGallery()">
+                            <i class="fas fa-eye me-1"></i>보기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">이미지 상세보기</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" class="img-fluid" src="" alt="분석 이미지">
+                <div id="modalImageInfo" class="mt-3">
+                    <!-- 이미지 정보가 여기에 표시됩니다 -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const jobId = '{{ job_id }}';
+let analysisResults = null;
+
+// 페이지 로드 시 결과 불러오기
+document.addEventListener('DOMContentLoaded', function() {
+    loadResults();
+});
+
+// 분석 결과 로드
+function loadResults() {
+    document.getElementById('loadingSpinner').style.display = 'block';
+    
+    fetch(`/api/results/${jobId}`)
+        .then(response => response.json())
+        .then(data => {
+            analysisResults = data;
+            displayResults(data);
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('resultsContent').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('결과 로드 오류:', error);
+            document.getElementById('loadingSpinner').innerHTML = 
+                '<div class="alert alert-danger">결과를 불러오는 중 오류가 발생했습니다.</div>';
+        });
+}
+
+// 결과 표시
+function displayResults(data) {
+    // 기본 정보 표시
+    document.getElementById('originalFilename').textContent = '{{ job.original_filename if job else "" }}';
+    document.getElementById('completedAt').textContent = formatDateTime('{{ job.completed_at if job else "" }}');
+    
+    // 메트릭 표시
+    document.getElementById('totalImages').textContent = data.total_images || 0;
+    document.getElementById('safeImages').textContent = data.safe_images || 0;
+    document.getElementById('riskImages').textContent = data.risk_images || 0;
+    
+    const safetyScore = data.safety_score || 0;
+    const scoreElement = document.getElementById('safetyScore');
+    scoreElement.textContent = safetyScore.toFixed(1) + '%';
+    
+    // 안전도 점수에 따른 색상 적용
+    scoreElement.className = 'safety-score';
+    if (safetyScore >= 80) {
+        scoreElement.classList.add('high');
+    } else if (safetyScore >= 60) {
+        scoreElement.classList.add('medium');
+    } else {
+        scoreElement.classList.add('low');
+    }
+    
+    // 상세 분석 결과 표시
+    displayDetailedAnalysis(data.analysis_results);
+    
+    // 위반 사항 표시
+    displayViolations(data.safety_report);
+    
+    // 권고사항 표시
+    displayRecommendations(data.safety_report);
+}
+
+// 상세 분석 결과 표시
+function displayDetailedAnalysis(analysisResults) {
+    const container = document.getElementById('detailsContainer');
+    container.innerHTML = '';
+    
+    if (!analysisResults) {
+        container.innerHTML = '<p class="text-muted">분석 결과가 없습니다.</p>';
+        return;
+    }
+    
+    let imageCount = 0;
+    for (const [imagePath, result] of Object.entries(analysisResults)) {
+        if (result.status !== 'success') continue;
+        
+        imageCount++;
+        const imageName = imagePath.split('/').pop();
+        const detections = result.detections || [];
+        const riskLevel = result.overall_risk || 'unknown';
+        
+        const riskBadgeClass = getRiskBadgeClass(riskLevel);
+        const riskText = getRiskText(riskLevel);
+        
+        const itemHtml = `
+            <div class="detection-item">
+                <div class="row align-items-center">
+                    <div class="col-md-2">
+                        <img src="${imagePath}" class="image-thumbnail" 
+                             onclick="showImageModal('${imagePath}', '${imageName}', '${JSON.stringify(detections).replace(/"/g, '&quot;')}')"
+                             alt="${imageName}">
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="mb-1">${imageName}</h6>
+                        <span class="risk-badge ${riskBadgeClass}">${riskText}</span>
+                        <div class="mt-2">
+                            <small class="text-muted">검출된 객체: ${detections.length}개</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="detection-summary">
+                            ${detections.slice(0, 3).map(d => 
+                                `<div class="small">• ${d.korean_label} (${(d.confidence * 100).toFixed(1)}%)</div>`
+                            ).join('')}
+                            ${detections.length > 3 ? `<div class="small text-muted">... 외 ${detections.length - 3}개</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML += itemHtml;
+        
+        if (imageCount >= 10) break; // 최대 10개만 표시
+    }
+    
+    if (imageCount === 0) {
+        container.innerHTML = '<p class="text-muted">표시할 분석 결과가 없습니다.</p>';
+    }
+}
+
+// 위반 사항 표시
+function displayViolations(safetyReport) {
+    const container = document.getElementById('violationsContainer');
+    container.innerHTML = '';
+    
+    if (!safetyReport || !safetyReport.violations || safetyReport.violations.length === 0) {
+        container.innerHTML = '<div class="alert alert-success">위반 사항이 발견되지 않았습니다.</div>';
+        return;
+    }
+    
+    safetyReport.violations.slice(0, 5).forEach(violation => {
+        const badgeClass = violation.risk_level === 'high' ? 'badge bg-danger' : 'badge bg-warning';
+        const violationHtml = `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                <div>
+                    <div class="fw-bold">${violation.violation}</div>
+                    <small class="text-muted">${violation.image}</small>
+                </div>
+                <div>
+                    <span class="${badgeClass}">${violation.count}건</span>
+                </div>
+            </div>
+        `;
+        container.innerHTML += violationHtml;
+    });
+}
+
+// 권고사항 표시
+function displayRecommendations(safetyReport) {
+    const container = document.getElementById('recommendationsContainer');
+    container.innerHTML = '';
+    
+    if (!safetyReport || !safetyReport.recommendations || safetyReport.recommendations.length === 0) {
+        container.innerHTML = '<p class="text-muted">권고사항이 없습니다.</p>';
+        return;
+    }
+    
+    safetyReport.recommendations.forEach((recommendation, index) => {
+        const recHtml = `
+            <div class="d-flex align-items-start mb-3">
+                <div class="flex-shrink-0 me-3">
+                    <span class="badge bg-info rounded-pill">${index + 1}</span>
+                </div>
+                <div class="flex-grow-1">
+                    <p class="mb-0">${recommendation}</p>
+                </div>
+            </div>
+        `;
+        container.innerHTML += recHtml;
+    });
+}
+
+// 위험도 뱃지 클래스 반환
+function getRiskBadgeClass(riskLevel) {
+    const classMap = {
+        'safe': 'risk-safe',
+        'low_risk': 'risk-low',
+        'medium_risk': 'risk-medium',
+        'high_risk': 'risk-high'
+    };
+    return classMap[riskLevel] || 'risk-safe';
+}
+
+// 위험도 텍스트 반환
+function getRiskText(riskLevel) {
+    const textMap = {
+        'safe': '안전',
+        'low_risk': '낮은 위험',
+        'medium_risk': '중간 위험',
+        'high_risk': '높은 위험',
+        'no_person_detected': '작업자 없음'
+    };
+    return textMap[riskLevel] || '알 수 없음';
+}
+
+// 이미지 모달 표시
+function showImageModal(imagePath, imageName, detectionsJson) {
+    document.getElementById('modalImage').src = imagePath;
+    
+    let detections;
+    try {
+        detections = JSON.parse(detectionsJson.replace(/&quot;/g, '"'));
+    } catch {
+        detections = [];
+    }
+    
+    let infoHtml = `<h6>${imageName}</h6>`;
+    if (detections.length > 0) {
+        infoHtml += '<div class="text-start mt-3"><strong>검출된 객체:</strong><ul>';
+        detections.forEach(d => {
+            infoHtml += `<li>${d.korean_label} (신뢰도: ${(d.confidence * 100).toFixed(1)}%)</li>`;
+        });
+        infoHtml += '</ul></div>';
+    } else {
+        infoHtml += '<p class="text-muted mt-3">검출된 객체가 없습니다.</p>';
+    }
+    
+    document.getElementById('modalImageInfo').innerHTML = infoHtml;
+    
+    new bootstrap.Modal(document.getElementById('imageModal')).show();
+}
+
+// 보고서 다운로드
+function downloadReport() {
+    window.open(`/api/download/report/${jobId}`, '_blank');
+}
+
+// 대시보드 다운로드
+function downloadDashboard() {
+    window.open(`/api/download/dashboard/${jobId}`, '_blank');
+}
+
+// 갤러리 보기
+function viewGallery() {
+    window.open(`/gallery/${jobId}`, '_blank');
+}
+
+// 날짜 시간 포맷팅
+function formatDateTime(isoString) {
+    if (!isoString) return '';
+    
+    const date = new Date(isoString);
+    return date.toLocaleString('ko-KR');
+}
+</script>
+{% endblock %}
